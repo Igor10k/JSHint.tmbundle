@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+	<key>beforeRunningCommand</key>
+	<string>nop</string>
+	<key>command</key>
+	<string>#!/usr/bin/env node
+
+var env = process.env || process.ENV;
+var file = env.TM_FILEPATH;
+var jshint = require('child_process').spawn('jshint', [file]);
+jshint.stdout.on('data', function (data) {
+	var output = '' + data;
+	console.log(output.replace(new RegExp(file + ': ', 'gi'), ''));
+});</string>
+	<key>input</key>
+	<string>none</string>
+	<key>inputFormat</key>
+	<string>text</string>
+	<key>name</key>
+	<string>Tooltip on save</string>
+	<key>outputCaret</key>
+	<string>afterOutput</string>
+	<key>outputFormat</key>
+	<string>text</string>
+	<key>outputLocation</key>
+	<string>toolTip</string>
+	<key>scope</key>
+	<string>source.js</string>
+	<key>semanticClass</key>
+	<string>callback.document.did-save</string>
+	<key>uuid</key>
+	<string>3D943B1E-E055-4945-B525-B917FFEF436D</string>
+	<key>version</key>
+	<integer>2</integer>
+</dict>
+</plist>
