@@ -13,6 +13,9 @@ var jshint = require('child_process').spawn('jshint', [file]);
 jshint.stdout.on('data', function (data) {
 	var output = '' + data;
 	console.log(output.replace(new RegExp(file + ': ', 'gi'), ''));
+});
+jshint.on('error', function () {
+	console.log('JSHint executable is not found. Probably JSHint is not installed globally.');
 });</string>
 	<key>input</key>
 	<string>none</string>
