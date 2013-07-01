@@ -8,17 +8,73 @@
 	<string>#!/usr/bin/env node
 
 var env = process.env || process.ENV;
-var file = env.TM_FILEPATH;
-var jshint = require('child_process').spawn('jshint', [file]);
-jshint.stdout.on('data', function (data) {
-	var output = '' + data;
-	console.log(output.replace(new RegExp(file + ': ', 'gi'), ''));
-});
-jshint.on('error', function () {
-	console.log('JSHint executable is not found. Probably JSHint is not installed globally.');
-});</string>
+var child_process = require('child_process');
+var tab = '';
+for (var i = env.TM_TAB_SIZE - 1; i &gt;= 0; i--) {
+	tab += ' ';
+}
+
+if (env.TM_SCOPE.search('source.js.embedded') &gt; -1) {
+	process.stdin.on("data", function (data) {
+		var fs = require('fs');
+		var input = '' + data;
+		var lines = input.split('\n');
+		var scripts = input.match(/&lt;script\b[^&lt;]*(?:(?!&lt;\/script&gt;)&lt;[^&lt;]*)*&lt;\/script&gt;/gi);
+		var scriptsIndents = [];
+		scripts.forEach(function (script, scriptIndex) {
+			script = script.replace(/&lt;script\b[^&gt;]*&gt;/, '').replace('&lt;/script&gt;', '').replace(/\t/g, tab)
+			if (script[0] !== '\n') {
+				script = '\n' + script;
+			}
+			var indent = script.match(/\s+/)[0];
+			script = script.replace(new RegExp(indent, 'g'), '\n');
+			scripts[scriptIndex] = script;
+			scriptsIndents.push(indent.length - 1);
+		});
+		var occurrence = 0;
+		lines.forEach(function (line, lineIndex) {
+			if (line.search(/&lt;script\b[^&gt;]*&gt;/) &gt; -1) {
+				var occ = occurrence;
+				occurrence++;
+				var filepath = '/var/tmp/jshint.tmbundle.' + lineIndex + '.tmp.js';
+				fs.writeFile(filepath, scripts[occ]);
+				var jshint = child_process.spawn('jshint', [filepath]);
+				jshint.stdout.on('data', function (data) {
+					dataLines = ('' + data).split('\n');
+					dataLines.forEach(function (dataLine, dataLineIndex) {
+						dataLine = dataLine.replace(new RegExp(filepath + ': ', 'gi'), '');
+						var matches = dataLine.match(/(line )(\d+)(, col )(\d+)(.*)/);
+						if (matches) {
+							dataLine = matches[1] + (+matches[2] + lineIndex) + matches[3] + (+matches[4] + scriptsIndents[occ]) + matches[5];
+						}
+						matches = dataLine.match(/(.*indentation at )(\d+)( instead at )(\d+)./);
+						if (matches) {
+							dataLine = matches[1] + (+matches[2] + scriptsIndents[occ]) + matches[3] + (+matches[4] + scriptsIndents[occ]);
+						}
+						dataLines[dataLineIndex] = dataLine;
+					});
+					console.log(dataLines.join('\n').replace(new RegExp(filepath + ': ', 'gi'), ''));
+				});
+				attachError(jshint);
+				jshint.on('exit', function () {
+					fs.unlink(filepath);
+				});
+			}
+		});
+	});
+} else {
+	var filepath = env.TM_FILEPATH;
+	var jshint = child_process.spawn('jshint', [filepath]);
+	attachError(jshint);
+}
+
+function attachError(jshint) {
+	jshint.on('error', function () {
+		console.log('JSHint executable is not found. Probably JSHint is not installed globally.');
+	});
+}</string>
 	<key>input</key>
-	<string>none</string>
+	<string>document</string>
 	<key>inputFormat</key>
 	<string>text</string>
 	<key>name</key>
