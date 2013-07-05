@@ -66,6 +66,10 @@ if (env.TM_SCOPE.search('source.js.embedded') &gt; -1) {
 	var filepath = env.TM_FILEPATH;
 	var jshint = child_process.spawn('jshint', [filepath]);
 	attachError(jshint);
+	jshint.stdout.on('data', function (data) {
+		data = '' + data;
+		console.log(data.replace(new RegExp(filepath + ': ', 'gi'), ''));
+	});
 }
 
 function attachError(jshint) {
